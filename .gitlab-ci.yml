@@ -1,38 +1,32 @@
 stages:
   - build
-  - run
-  - test
+  - deploy
 
 variables:
-  GIT_PATH: "C:\\Program Files\\Git\\cmd"
-  MAVEN_HOME: "E:\\apache-maven-3.9.9"
   JAVA_HOME: "C:\\Program Files\\Java\\jdk-17"
-  PATH: "$GIT_PATH;$JAVA_HOME\\bin;$MAVEN_HOME\\bin;$PATH"
-  
-build_job:
+  PATH: "%JAVA_HOME%\\bin;%PATH%"
+
+build_app:
   stage: build
   tags:
     - windows
   script:
-    - echo "Building Spring Boot project..."
-    - '%MAVEN_HOME%\\bin\\mvn.cmd clean package -DskipTests'
+    - echo "Cleaning and packaging the Spring Boot application..."
+    - mvn clean package -DskipTests
   artifacts:
     paths:
       - target/*.jar
+    expire_in: 1 hour
 
-run_job:
-  stage: run
+deploy_app:
+  stage: deploy
   tags:
     - windows
   script:
-    - echo "Starting the Spring Boot app..."
-    - powershell -Command "Start-Process -NoNewWindow java -ArgumentList '-jar target/springboot-gym-html-app-gitlab-windows-1.0.0.jar'"
-    - timeout /t 10 /nobreak
-
-test_job:
-  stage: test
-  tags:
-    - windows
-  script:
-    - echo "Checking if app is running..."
-    - curl http://localhost:9090/Home.html
+    - echo "Killing any existing process running on port 9090..."
+    - for /f "tokens=5" %%a in ('netstat -aon ^| find ":9090" ^| find "LISTENING"') do taskkill /F /PID %%a
+    - echo "Starting Spring Boot application on port 9090..."
+    - start /MIN cmd /c "java -jar target\\springboot-gym-html-app-1.0.0.jar"
+    - timeout /t 10 > NUL
+    - echo "Verifying deployment..."
+    - curl http://localhost:9090/

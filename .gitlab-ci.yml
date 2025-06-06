@@ -1,0 +1,57 @@
+stages:
+  - build
+  - test
+  - package
+  - pages
+
+before_script:
+  - echo "Starting CI/CD pipeline on Windows for Spring Boot Gym HTML App"
+  - java -version
+  - mvn -version
+
+build:
+  stage: build
+  script:
+    - echo "Compiling the project"
+    - mvn clean compile
+  tags:
+    - windows-runner
+  only:
+    - main
+
+test:
+  stage: test
+  script:
+    - echo "Running tests"
+    - mvn test
+  tags:
+    - windows-runner
+  only:
+    - main
+
+package:
+  stage: package
+  script:
+    - echo "Packaging the application"
+    - mvn package
+  artifacts:
+    paths:
+      - target/*.jar
+  tags:
+    - windows-runner
+  only:
+    - main
+
+pages:
+  stage: pages
+  script:
+    - echo "Copying static files for GitLab Pages"
+    - mkdir public
+    - xcopy src\main\resources\static public /E /I /Y
+  artifacts:
+    paths:
+      - public
+  tags:
+    - windows-runner
+  only:
+    - main

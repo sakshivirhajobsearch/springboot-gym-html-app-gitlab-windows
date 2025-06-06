@@ -1,13 +1,20 @@
+stages:
+  - build
+  - test
+  - package
+  - pages
+
 before_script:
-  - echo "Starting CI/CD pipeline on Windows for Spring Boot Gym HTML App"
+  - echo "Starting CI/CD pipeline for Spring Boot Gym HTML App"
   - java -version
   - mvn -version
-  - cd springboot-gym-html-app  # Change to the directory containing pom.xml
+  - cd springboot-gym-html-app  # 👈 Make sure to go to the right directory
+  - export PROJECT_DIR=$(pwd)   # Save the path for reuse
 
 build:
   stage: build
   script:
-    - cd springboot-gym-html-app  # Make sure you're in the right folder
+    - cd "$PROJECT_DIR"
     - echo "Compiling the project"
     - mvn clean compile
   tags:
@@ -18,7 +25,7 @@ build:
 test:
   stage: test
   script:
-    - cd springboot-gym-html-app
+    - cd "$PROJECT_DIR"
     - echo "Running tests"
     - mvn test
   tags:
@@ -29,7 +36,7 @@ test:
 package:
   stage: package
   script:
-    - cd springboot-gym-html-app
+    - cd "$PROJECT_DIR"
     - echo "Packaging the application"
     - mvn package
   artifacts:
@@ -43,7 +50,7 @@ package:
 pages:
   stage: pages
   script:
-    - cd springboot-gym-html-app
+    - cd "$PROJECT_DIR"
     - echo "Copying static files for GitLab Pages"
     - mkdir ../public
     - xcopy src\main\resources\static ..\public /E /I /Y

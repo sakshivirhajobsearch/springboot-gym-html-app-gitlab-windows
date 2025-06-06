@@ -1,63 +1,37 @@
 stages:
   - build
+  - run
   - test
-  - package
-  - pages
 
-before_script:
-  - echo "Starting CI/CD pipeline for Spring Boot Gym HTML App"
-  - java -version
-  - mvn -version
-  - cd springboot-gym-html-app  # 👈 Make sure to go to the right directory
-  - export PROJECT_DIR=$(pwd)   # Save the path for reuse
+variables:
+  MAVEN_HOME: "E:\\apache-maven-3.9.9"
+  JAVA_HOME: "C:\\Program Files\\Java\\jdk-17"
+  PATH: "$JAVA_HOME\\bin;$MAVEN_HOME\\bin;$PATH"
 
-build:
+build_job:
   stage: build
-  script:
-    - cd "$PROJECT_DIR"
-    - echo "Compiling the project"
-    - mvn clean compile
   tags:
-    - windows-runner
-  only:
-    - main
+    - windows
+  script:
+    - echo "Building Spring Boot project..."
+    - '%MAVEN_HOME%\\bin\\mvn.cmd clean package -DskipTests'
+  artifacts:
+    paths:
+      - target/*.jar
 
-test:
+run_job:
+  stage: run
+  tags:
+    - windows
+  script:
+    - echo "Starting the Spring Boot app..."
+    - powershell -Command "Start-Process -NoNewWindow java -ArgumentList '-jar target/springboot-gym-html-app-gitlab-windows-1.0.0.jar'"
+    - timeout /t 10 /nobreak
+
+test_job:
   stage: test
-  script:
-    - cd "$PROJECT_DIR"
-    - echo "Running tests"
-    - mvn test
   tags:
-    - windows-runner
-  only:
-    - main
-
-package:
-  stage: package
+    - windows
   script:
-    - cd "$PROJECT_DIR"
-    - echo "Packaging the application"
-    - mvn package
-  artifacts:
-    paths:
-      - springboot-gym-html-app/target/*.jar
-  tags:
-    - windows-runner
-  only:
-    - main
-
-pages:
-  stage: pages
-  script:
-    - cd "$PROJECT_DIR"
-    - echo "Copying static files for GitLab Pages"
-    - mkdir ../public
-    - xcopy src\main\resources\static ..\public /E /I /Y
-  artifacts:
-    paths:
-      - public
-  tags:
-    - windows-runner
-  only:
-    - main
+    - echo "Checking if app is running..."
+    - curl http://localhost:9090/Home.html

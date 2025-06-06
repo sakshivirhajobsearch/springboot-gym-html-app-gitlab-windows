@@ -1,32 +1,30 @@
 stages:
   - build
+  - test
   - deploy
 
-variables:
-  JAVA_HOME: "C:\\Program Files\\Java\\jdk-17"
-  PATH: "%JAVA_HOME%\\bin;%PATH%"
-
-build_app:
+build-job:
   stage: build
   tags:
     - windows
   script:
-    - echo "Cleaning and packaging the Spring Boot application..."
-    - mvn clean package -DskipTests
-  artifacts:
-    paths:
-      - target/*.jar
-    expire_in: 1 hour
+    - echo "Building Spring Boot app..."
+    - mvn clean package
 
-deploy_app:
+test-job:
+  stage: test
+  tags:
+    - windows
+  script:
+    - echo "Running tests..."
+    - mvn test
+
+deploy-job:
   stage: deploy
   tags:
     - windows
   script:
-    - echo "Killing any existing process running on port 9090..."
-    - for /f "tokens=5" %%a in ('netstat -aon ^| find ":9090" ^| find "LISTENING"') do taskkill /F /PID %%a
-    - echo "Starting Spring Boot application on port 9090..."
-    - start /MIN cmd /c "java -jar target\\springboot-gym-html-app-1.0.0.jar"
-    - timeout /t 10 > NUL
-    - echo "Verifying deployment..."
-    - curl http://localhost:9090/
+    - echo "Starting Spring Boot app on port 9090..."
+    - java -jar target/*.jar &
+    - Start-Sleep -Seconds 10
+    - curl http://localhost:9090/home.html

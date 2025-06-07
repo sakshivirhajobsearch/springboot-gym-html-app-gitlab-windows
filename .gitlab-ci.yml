@@ -9,7 +9,7 @@ variables:
 build_app:
   stage: build
   tags:
-    - windows
+    - windows-runner
   script:
     - echo "Building Spring Boot application..."
     - mvn clean package -DskipTests

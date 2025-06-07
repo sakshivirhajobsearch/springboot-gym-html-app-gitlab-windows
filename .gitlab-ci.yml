@@ -18,7 +18,7 @@ build_app:
   artifacts:
     paths:
       - target/*.jar
-    expire_in: 5 min 
+    expire_in: 5 min
 
 deploy_app:
   stage: deploy
@@ -26,9 +26,16 @@ deploy_app:
     - windows-runner
   script:
     - echo "Attempting to stop existing process on port 9090..."
-    - powershell -Command "try { Get-NetTCPConnection -LocalPort 9090 -State Listen -ErrorAction Stop | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force } } catch { Write-Host 'No process found on port 9090 — continuing...' }"
+    - |
+      try {
+        Get-NetTCPConnection -LocalPort 9090 -State Listen | ForEach-Object {
+          Stop-Process -Id $_.OwningProcess -Force
+        }
+      } catch {
+        Write-Host 'No process found on port 9090 — continuing...'
+      }
     - echo "Starting Spring Boot application..."
-    - powershell -Command "Start-Process -FilePath 'java' -ArgumentList '-jar', 'target\\springboot-gym-html-app-gitlab-windows-1.0.0.jar' -WindowStyle Hidden"
+    - Start-Process -FilePath 'java' -ArgumentList '-jar', 'target\springboot-gym-html-app-gitlab-windows-1.0.0.jar' -WindowStyle Hidden
     - Start-Sleep -Seconds 10
     - echo "Verifying application is up..."
     - curl http://localhost:9090/

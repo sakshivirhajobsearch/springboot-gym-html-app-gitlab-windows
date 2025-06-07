@@ -1,34 +1,32 @@
 stages:
   - build
-  - deploy
+  - test
+  - package
 
 variables:
-  JAVA_HOME: "C:\\Program Files\\Java\\jdk-17"
-  PATH: "C:\\Program Files\\Java\\jdk-17\\bin;E:\\apache-maven-3.9.9\\bin;C:\\Program Files\\Git\\cmd;%PATH%"
+  MAVEN_CLI_OPTS: "-B -DskipTests"
 
-build_app:
+build-job:
   stage: build
   tags:
-    - windows-runner
+    - windows
   script:
-    - echo "Checking Maven version..."
-    - mvn -version
-    - echo "Building Spring Boot application..."
-    - mvn clean package -DskipTests
-  artifacts:
-    paths:
-      - target/*.jar
-    expire_in: 5 min
+    - echo "Building Spring Boot App on Windows..."
+    - mvn %MAVEN_CLI_OPTS% clean compile
 
-deploy_app:
-  stage: deploy
+test-job:
+  stage: test
   tags:
-    - windows-runner
+    - windows
   script:
-    - echo "Attempting to stop existing process on port 9090..."
-    - powershell -Command "try { Get-NetTCPConnection -LocalPort 9090 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force } } catch { Write-Host 'No process found on port 9090 — continuing...' }"
-    - echo "Starting Spring Boot application..."
-    - powershell -Command "Start-Process -FilePath 'java' -ArgumentList '-jar', 'target\\springboot-gym-html-app-gitlab-windows-1.0.0.jar' -WindowStyle Hidden"
-    - timeout /t 10
-    - echo "Verifying application is up..."
-    - powershell -Command "try { $response = Invoke-WebRequest -Uri http://localhost:9090/ -UseBasicParsing -TimeoutSec 10; Write-Host \"App is up. Status: $($response.StatusCode)\" } catch { Write-Host \"App failed to start or is unreachable.\"; exit 1 }"
+    - echo "Running Unit Tests..."
+    - mvn test
+
+package-job:
+  stage: package
+  tags:
+    - windows
+  script:
+    - echo "Packaging the Application..."
+    - mvn %MAVEN_CLI_OPTS% package
+    - echo "JAR file generated in target directory"

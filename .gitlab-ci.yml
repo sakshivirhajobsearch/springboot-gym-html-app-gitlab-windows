@@ -27,8 +27,9 @@ deploy_app:
   script:
     - echo "Attempting to stop existing process on port 9090..."
     - |
+      $ErrorActionPreference = 'Continue'
       try {
-        Get-NetTCPConnection -LocalPort 9090 -State Listen | ForEach-Object {
+        Get-NetTCPConnection -LocalPort 9090 -State Listen -ErrorAction Stop | ForEach-Object {
           Stop-Process -Id $_.OwningProcess -Force
         }
       } catch {
@@ -38,4 +39,11 @@ deploy_app:
     - Start-Process -FilePath 'java' -ArgumentList '-jar', 'target\springboot-gym-html-app-gitlab-windows-1.0.0.jar' -WindowStyle Hidden
     - Start-Sleep -Seconds 10
     - echo "Verifying application is up..."
-    - curl http://localhost:9090/
+    - |
+      try {
+        $response = Invoke-WebRequest -Uri http://localhost:9090/ -UseBasicParsing -TimeoutSec 10
+        Write-Host "App is up. Status: $($response.StatusCode)"
+      } catch {
+        Write-Host "App failed to start or is unreachable."
+        exit 1
+      }
